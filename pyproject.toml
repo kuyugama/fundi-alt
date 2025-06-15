@@ -1,0 +1,19 @@
+[project]
+name = "fundi-alt"
+version = "0.0.1"
+description = "Alternative realisation of FunDIs injection mechanism"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fundi>=1.1.6",
+]
+
+[tool.uv.sources]
+fundi = { git = "https://github.com/kuyucode/fundi" }
+
+[tool.pyright]
+reportAny = false
+reportCallInDefaultInitializer = false
+
+[tool.black]
+line-length=100

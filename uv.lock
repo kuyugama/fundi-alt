@@ -1,0 +1,19 @@
+version = 1
+revision = 2
+requires-python = ">=3.10"
+
+[[package]]
+name = "fundi"
+version = "1.1.6"
+source = { git = "https://github.com/kuyucode/fundi#573507ba938825f20aa16596813c62775c1dd96e" }
+
+[[package]]
+name = "fundi-alt"
+version = "0.0.1"
+source = { virtual = "." }
+dependencies = [
+    { name = "fundi" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "fundi", git = "https://github.com/kuyucode/fundi" }]
