@@ -113,11 +113,16 @@ class Scope:
 
     def resolve_by_name(self, name: str) -> typing.Any:
         try:
-            return self._keyed[name]
+            value = self._keyed[name]
         except KeyError as exc:
             if self._parent is not None:
                 try:
-                    self._parent.resolve_by_name(name)
+                    value = self._parent.resolve_by_name(name)
                 except ScopeResolutionError:
                     pass
             raise ScopeResolutionError(name) from exc
+
+        if isinstance(value, TypeCast):
+            return value.value
+
+        return value
