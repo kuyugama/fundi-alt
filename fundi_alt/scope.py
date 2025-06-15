@@ -3,6 +3,7 @@ import collections.abc
 
 from fundi import CallableInfo, scan
 
+from fundi_alt.types import TypeCast
 from fundi_alt.util import normalize_annotation
 from fundi_alt.exceptions import ScopeResolutionError
 
@@ -91,8 +92,11 @@ class Scope:
             type_ = (type_,)
 
         for value in self._keyed.values():
+            if isinstance(value, TypeCast) and value.alias in type_:
+                return value.value
+
             if isinstance(value, type_):
-                return value
+                return typing.cast(T, value)
 
         for resolves_to, resolver in self._resolvers.items():
             if any(t in resolves_to for t in type_):
