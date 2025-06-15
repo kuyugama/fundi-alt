@@ -1,6 +1,7 @@
 from .scope import Scope
 from . import exceptions
 from fundi import FromType
+from .types import TypeCast
 from fundi.scan import scan
 from fundi.from_ import from_
 from .inject import inject, ainject
@@ -24,6 +25,7 @@ __all__ = [
     "inject",
     "ainject",
     "FromType",
+    "TypeCast",
     "Parameter",
     "exceptions",
     "CallableInfo",
