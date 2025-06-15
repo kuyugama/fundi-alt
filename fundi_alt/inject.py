@@ -1,9 +1,10 @@
 import typing
+import contextlib
 import collections.abc
 from contextlib import AsyncExitStack, ExitStack
 
 from fundi import CallableInfo
-from fundi.util import call_async, call_sync
+from fundi.util import add_injection_trace, call_async, call_sync
 
 from fundi_alt.scope import Scope
 from fundi_alt.util import normalize_annotation
@@ -62,39 +63,18 @@ def injection_impl(
     - Finally, yields `(values, info, False)` — the fully resolved parameter dictionary,
       along with the original callable info.
     """
-
+    # TODO: split into two functions - resolve and injection_impl to improve code readability
     values: dict[str, typing.Any] = {}
+    try:
+        for parameter in info.parameters:
+            # Set current parameter for nested injections
+            # this is realisation of Parameter-aware dependencies support
+            scope.value("__fundi_parameter__", parameter)
 
-    for parameter in info.parameters:
-        scope.value("__fundi_parameter__", parameter)
-        if parameter.from_ is not None:
-            dependency = parameter.from_
+            # Handle parameter that needs to be resolved by dependency
+            if parameter.from_ is not None:
+                dependency = parameter.from_
 
-            id_, cached, can_be_cached = _cache_status(dependency, cache)
-
-            if cached:
-                value = cache[id_]
-            else:
-                value = yield scope, dependency, True
-
-                if can_be_cached:
-                    cache[id_] = value
-
-            values[parameter.name] = value
-            continue
-
-        if parameter.resolve_by_type:
-            type_ = normalize_annotation(parameter.annotation)
-            try:
-                value = scope.resolve_by_type(type_)  # pyright: ignore[reportUnknownVariableType]
-            except ScopeResolutionError:
-                if parameter.has_default:
-                    value = parameter.default
-                else:
-                    raise
-
-            if isinstance(value, CallableInfo) and CallableInfo not in type_:
-                dependency = typing.cast(CallableInfo[typing.Any], value)
                 id_, cached, can_be_cached = _cache_status(dependency, cache)
 
                 if cached:
@@ -105,18 +85,50 @@ def injection_impl(
                     if can_be_cached:
                         cache[id_] = value
 
-            values[parameter.name] = value
-            continue
+                values[parameter.name] = value
+                continue
 
-        try:
-            values[parameter.name] = scope.resolve_by_name(parameter.name)
-        except ScopeResolutionError:
-            if parameter.has_default:
-                values[parameter.name] = parameter.default
-            else:
-                raise
+            # Handle parameter that needs to be resolved by type
+            if parameter.resolve_by_type:
+                type_ = normalize_annotation(parameter.annotation)
+                try:
+                    value = typing.cast(
+                        typing.Any | CallableInfo[typing.Any], scope.resolve_by_type(type_)
+                    )
+                except ScopeResolutionError:
+                    if parameter.has_default:
+                        value = parameter.default
+                    else:
+                        raise
 
-    yield values, info, False
+                # Scope returned resolver - requesting to resolve it from caller, or use cached value
+                if isinstance(value, CallableInfo) and CallableInfo not in type_:
+                    dependency = typing.cast(CallableInfo[typing.Any], value)
+                    id_, cached, can_be_cached = _cache_status(dependency, cache)
+
+                    if cached:
+                        value = cache[id_]
+                    else:
+                        value = yield scope, dependency, True
+
+                        if can_be_cached:
+                            cache[id_] = value
+
+                values[parameter.name] = value
+                continue
+
+            # Try to resolve parameter by name
+            try:
+                values[parameter.name] = scope.resolve_by_name(parameter.name)
+            except ScopeResolutionError:
+                if parameter.has_default:
+                    values[parameter.name] = parameter.default
+                else:
+                    raise
+
+        yield values, info, False
+    except Exception as exc:
+        add_injection_trace(exc, info, values)
 
 
 def inject(
@@ -142,18 +154,24 @@ def inject(
 
     gen = injection_impl(scope, info, cache)
 
-    value: typing.Any | None = None
+    try:
+        value: typing.Any | None = None
+        while True:
+            inner_scope, inner_info, more = gen.send(value)
 
-    while True:
-        inner_scope, inner_info, more = gen.send(value)
+            if more and isinstance(inner_scope, Scope):
+                value = inject(inner_scope, inner_info, stack, visited.copy())
+                continue
 
-        if more and isinstance(inner_scope, Scope):
-            value = inject(inner_scope, inner_info, stack, visited.copy())
-            continue
+            assert isinstance(inner_scope, collections.abc.Mapping)
 
-        assert isinstance(inner_scope, collections.abc.Mapping)
+            return call_sync(stack, inner_info, inner_scope)
+    except Exception as exc:
+        # Add injection trace to exception
+        with contextlib.suppress(StopIteration):
+            _ = gen.throw(type(exc), exc, exc.__traceback__)
 
-        return call_sync(stack, inner_info, inner_scope)
+        raise
 
 
 async def ainject(
@@ -178,16 +196,22 @@ async def ainject(
 
     value: typing.Any | None = None
 
-    while True:
-        inner_scope, inner_info, more = gen.send(value)
+    try:
+        while True:
+            inner_scope, inner_info, more = gen.send(value)
 
-        if more and isinstance(inner_scope, Scope):
-            value = await ainject(inner_scope, inner_info, stack, visited.copy())
-            continue
+            if more and isinstance(inner_scope, Scope):
+                value = await ainject(inner_scope, inner_info, stack, visited.copy())
+                continue
 
-        assert isinstance(inner_scope, collections.abc.Mapping)
+            assert isinstance(inner_scope, collections.abc.Mapping)
 
-        if info.async_:
-            return await call_async(stack, inner_info, inner_scope)
+            if info.async_:
+                return await call_async(stack, inner_info, inner_scope)
 
-        return call_sync(stack, inner_info, inner_scope)
+            return call_sync(stack, inner_info, inner_scope)
+    except Exception as exc:
+        # Add injection trace to exception
+        with contextlib.suppress(StopIteration):
+            _ = gen.throw(type(exc), exc, exc.__traceback__)
+        raise
