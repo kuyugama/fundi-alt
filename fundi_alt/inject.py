@@ -28,7 +28,7 @@ def _cache_status(
     return id_, False, True
 
 
-def _inject_impl(
+def injection_impl(
     scope: Scope,
     info: CallableInfo[typing.Any],
     cache: collections.abc.MutableMapping[int, typing.Any],
@@ -140,7 +140,7 @@ def inject(
     if cache is None:
         cache = {}
 
-    gen = _inject_impl(scope, info, cache)
+    gen = injection_impl(scope, info, cache)
 
     value: typing.Any | None = None
 
@@ -174,7 +174,7 @@ async def ainject(
     if cache is None:
         cache = {}
 
-    gen = _inject_impl(scope, info, cache)
+    gen = injection_impl(scope, info, cache)
 
     value: typing.Any | None = None
 
