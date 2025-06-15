@@ -77,9 +77,13 @@ class Scope:
     def child(self) -> "Scope":
         return Scope(parent=self)
 
-    def resolver(self, resolver: C) -> C:
+    def resolver(self, resolver: C, resolves_to: typing.Any = ...) -> C:
         info = scan(resolver)
-        annotation = normalize_annotation(info.return_annotation)
+        if resolves_to is ...:
+            resolves_to = info.return_annotation
+
+        annotation = normalize_annotation(resolves_to)
+
         self._resolvers[annotation] = info
 
         return resolver

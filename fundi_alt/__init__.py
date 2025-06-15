@@ -5,7 +5,6 @@ from .types import TypeCast
 from fundi.scan import scan
 from fundi.from_ import from_
 from .inject import inject, ainject
-from .wrapper import resolver_wrapper
 from fundi.util import injection_trace, is_configured, get_configuration
 from fundi.configurable import configurable_dependency, MutableConfigurationWarning
 
@@ -33,7 +32,6 @@ __all__ = [
     "is_configured",
     "InjectionTrace",
     "injection_trace",
-    "resolver_wrapper",
     "get_configuration",
     "DependencyConfiguration",
     "configurable_dependency",
