@@ -45,17 +45,7 @@ def resolver_wrapper(
             functools.partial(resolver_wrapper, type_=dt),
         )
 
-    @functools.wraps(
-        dt,
-        assigned=(
-            "__module__",
-            "__name__",
-            "__qualname__",
-            "__doc__",
-            "__annotations__",
-            "__fundi_configuration__",
-        ),
-    )
+    @functools.wraps(dt, assigned=("__fundi_configuration__",), updated=())
     def dependency(result: typing.Any) -> T:
         return result
 
