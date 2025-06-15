@@ -7,7 +7,7 @@ Basic example of what you can do with that:
 
 from contextlib import ExitStack
 
-from fundi_alt import FromType, from_, scan, Scope, inject, resolver_wrapper
+from fundi_alt import FromType, from_, scan, Scope, inject, TypeCast
 
 
 class Multiplier(int): ...
@@ -34,12 +34,13 @@ def app(
     print("Logged in as", username)
 
 
+# Or app_scope.resolver(lambda: 2, Multiplier)
 @app_scope.resolver
 def resolve_multiplier() -> Multiplier:
     return Multiplier(2)
 
 
-app_scope.resolver(lambda: "Kuyugama", Username)
+app_scope.value("username", TypeCast(Username, "Kuyugama"))
 
 with ExitStack() as stack:
     inject(app_scope, scan(app), stack)
