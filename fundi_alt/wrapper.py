@@ -6,21 +6,19 @@ from fundi import from_
 
 T = typing.TypeVar("T")
 
+Returns = typing.Callable[..., T]
+Decorator = typing.Callable[[Returns[T]], Returns[T]]
+
 
 @typing.overload
 def resolver_wrapper(
     dt: type[T],
-) -> typing.Callable[[typing.Callable[..., typing.Any]], T]: ...
+) -> Decorator[T]: ...
 @typing.overload
+def resolver_wrapper(dt: Returns[typing.Any], type_: type[T]) -> Returns[T]: ...
 def resolver_wrapper(
-    dt: typing.Callable[..., typing.Any], type_: type[T]
-) -> typing.Callable[..., T]: ...
-def resolver_wrapper(
-    dt: type[T] | typing.Callable[..., typing.Any], type_: type[T] | None = None
-) -> (
-    typing.Callable[..., T]
-    | typing.Callable[[typing.Callable[..., typing.Any]], typing.Callable[..., T]]
-):
+    dt: type[T] | Returns[T], type_: type[T] | None = None
+) -> Returns[T] | Decorator[T]:
     """
     Little hack to deceive `fundi.scan.scan` into thinking
     that dependency actually returns other type.
@@ -42,13 +40,10 @@ def resolver_wrapper(
     """
     if type_ is None and isinstance(dt, type):
         type_ = dt
-
-        def decorator(
-            dt: typing.Callable[..., typing.Any],
-        ) -> typing.Callable[..., T]:
-            return resolver_wrapper(dt, type_)
-
-        return decorator
+        return typing.cast(
+            Decorator[T],
+            functools.partial(resolver_wrapper, type_=dt),
+        )
 
     @functools.wraps(
         dt,
@@ -64,15 +59,12 @@ def resolver_wrapper(
     def dependency(result: typing.Any) -> T:
         return result
 
-    dependency.__annotations__["return"] = type_
-
     signature = inspect.signature(dt).replace(
         parameters=[
             inspect.Parameter("result", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=from_(dt))
         ],
         return_annotation=type_,
     )
-
-    dependency.__signature__ = signature  # pyright: ignore[reportAttributeAccessIssue]
+    setattr(dependency, "__signature__", signature)
 
     return dependency
