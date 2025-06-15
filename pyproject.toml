@@ -14,6 +14,7 @@ fundi = { git = "https://github.com/kuyucode/fundi" }
 [tool.pyright]
 reportAny = false
 reportCallInDefaultInitializer = false
+ignore = [".venv"]
 
 [tool.black]
 line-length=100
