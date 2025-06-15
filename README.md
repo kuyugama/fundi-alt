@@ -39,7 +39,7 @@ def resolve_multiplier() -> Multiplier:
     return Multiplier(2)
 
 
-app_scope.resolver(resolver_wrapper(lambda: "Kuyugama", Username))
+app_scope.resolver(lambda: "Kuyugama", Username)
 
 with ExitStack() as stack:
     inject(app_scope, scan(app), stack)
