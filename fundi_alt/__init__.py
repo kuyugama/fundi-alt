@@ -4,7 +4,7 @@ from fundi import FromType
 from fundi.scan import scan
 from fundi.from_ import from_
 from .inject import inject, ainject
-from .wrapper import resolver_wrapper, ObjectWrapper
+from .wrapper import resolver_wrapper
 from fundi.util import injection_trace, is_configured, get_configuration
 from fundi.configurable import configurable_dependency, MutableConfigurationWarning
 
@@ -28,7 +28,6 @@ __all__ = [
     "exceptions",
     "CallableInfo",
     "TypeResolver",
-    "ObjectWrapper",
     "is_configured",
     "InjectionTrace",
     "injection_trace",
