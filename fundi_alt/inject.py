@@ -129,6 +129,7 @@ def injection_impl(
         yield values, info, False
     except Exception as exc:
         add_injection_trace(exc, info, values)
+        raise
 
 
 def inject(
@@ -168,10 +169,7 @@ def inject(
             return call_sync(stack, inner_info, inner_scope)
     except Exception as exc:
         # Add injection trace to exception
-        with contextlib.suppress(StopIteration):
-            _ = gen.throw(type(exc), exc, exc.__traceback__)
-
-        raise
+        _ = gen.throw(type(exc), exc, exc.__traceback__)
 
 
 async def ainject(
@@ -212,6 +210,4 @@ async def ainject(
             return call_sync(stack, inner_info, inner_scope)
     except Exception as exc:
         # Add injection trace to exception
-        with contextlib.suppress(StopIteration):
-            _ = gen.throw(type(exc), exc, exc.__traceback__)
-        raise
+        _ = gen.throw(type(exc), exc, exc.__traceback__)
