@@ -13,8 +13,16 @@ class ScopeResolutionError(KeyError):
 
 
 class DependencyCycleError(Exception):
-    def __init__(self, visited: set[typing.Callable[..., typing.Any]]) -> None:
-        message = f"Dependency cycle found. Visited dependencies: {', '.join(callable_str(c) for c in visited)}"
+    def __init__(
+        self,
+        visiting: typing.Callable[..., typing.Any],
+        visited: set[typing.Callable[..., typing.Any]],
+    ) -> None:
+        message = (
+            f"Dependency cycle found when visiting {callable_str(visiting)}. "
+            f"Visited dependencies: {', '.join(callable_str(c) for c in visited)}"
+        )
+
         super().__init__(message)
 
         self.visited: set[typing.Callable[..., typing.Any]] = visited

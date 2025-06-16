@@ -145,7 +145,7 @@ def inject(
         visited = set()
 
     if info.call in visited:
-        raise DependencyCycleError(visited)
+        raise DependencyCycleError(info.call, visited)
 
     visited.add(info.call)
 
@@ -185,7 +185,7 @@ async def ainject(
         visited = set()
 
     if info.call in visited:
-        raise DependencyCycleError(visited)
+        raise DependencyCycleError(info.call, visited)
 
     visited.add(info.call)
 
