@@ -14,6 +14,7 @@ def injection_impl(
     scope: Scope,
     info: CallableInfo[typing.Any],
     cache: collections.abc.MutableMapping[int, typing.Any],
+    override: collections.abc.Mapping[typing.Callable[..., typing.Any], CallableInfo[typing.Any]],
 ) -> collections.abc.Generator[
     tuple[Scope | dict[str, typing.Any], CallableInfo[typing.Any], bool], typing.Any, None
 ]:
@@ -46,7 +47,7 @@ def injection_impl(
     """
     values: dict[str, typing.Any] = {}
     try:
-        for result in resolve(scope, info, cache):
+        for result in resolve(scope, info, cache, override):
             if result.resolved:
                 values[result.parameter.name] = result.value
                 continue
@@ -78,6 +79,9 @@ def inject(
     stack: ExitStack,
     visited: set[typing.Callable[..., typing.Any]] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: (
+        collections.abc.Mapping[typing.Callable[..., typing.Any], CallableInfo[typing.Any]] | None
+    ) = None,
 ) -> typing.Any:
     if info.async_:
         raise ValueError("Non-async injection support only non-async dependencies")
@@ -93,7 +97,7 @@ def inject(
     if cache is None:
         cache = {}
 
-    gen = injection_impl(scope, info, cache)
+    gen = injection_impl(scope, info, cache, override or {})
 
     try:
         value: typing.Any | None = None
@@ -118,6 +122,9 @@ async def ainject(
     stack: AsyncExitStack,
     visited: set[typing.Callable[..., typing.Any]] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: (
+        collections.abc.Mapping[typing.Callable[..., typing.Any], CallableInfo[typing.Any]] | None
+    ) = None,
 ) -> typing.Any:
     if visited is None:
         visited = set()
@@ -130,7 +137,7 @@ async def ainject(
     if cache is None:
         cache = {}
 
-    gen = injection_impl(scope, info, cache)
+    gen = injection_impl(scope, info, cache, override or {})
 
     value: typing.Any | None = None
 
