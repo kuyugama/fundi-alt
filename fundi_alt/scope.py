@@ -74,10 +74,22 @@ class Scope:
                 annotation = normalize_annotation(info.return_annotation)
                 self._resolvers[annotation] = info
 
+    @property
+    def values(self) -> collections.abc.Mapping[str, typing.Any]:
+        """Values stored in scope"""
+        return self._keyed.copy()
+
+    @property
+    def resolvers(self) -> collections.abc.Mapping[tuple[type, ...], CallableInfo[typing.Any]]:
+        """Resolvers stored in scope"""
+        return self._resolvers.copy()
+
     def child(self) -> "Scope":
+        """Create child scope"""
         return Scope(parent=self)
 
     def resolver(self, resolver: C, resolves_to: typing.Any = ...) -> C:
+        """Register type resolver in scope"""
         info = scan(resolver)
         if resolves_to is ...:
             resolves_to = info.return_annotation
@@ -89,9 +101,36 @@ class Scope:
         return resolver
 
     def value(self, name: str, value: typing.Any) -> None:
+        """Add value into scope"""
         self._keyed[name] = value
 
+    def drop_value(self, name: str):
+        """Remove value from scope"""
+        try:
+            del self._keyed[name]
+        except KeyError as exc:
+            raise ScopeResolutionError(name) from exc
+
+    def drop_resolver(self, resolves_to: type):
+        """
+        Remove resolver from scope. You need to specify
+        exact same type annotation using which resolver was registered
+        """
+        annotation = normalize_annotation(resolves_to)
+
+        try:
+            del self._resolvers[annotation]
+        except KeyError as exc:
+            raise ScopeResolutionError(resolves_to) from exc
+
     def resolve_by_type(self, type_: type[T] | tuple[type[T], ...]) -> T | CallableInfo[T]:
+        """
+        Resolve value by type using this scope's stored values
+
+        If value is not found - resolver that can be used
+        to resolve value is returned. If resolver not found -
+        parent scope is requested for value
+        """
         if not isinstance(type_, tuple):
             type_ = (type_,)
 
@@ -112,6 +151,12 @@ class Scope:
         raise ScopeResolutionError(type_)
 
     def resolve_by_name(self, name: str) -> typing.Any:
+        """
+        Resolve value from name using this scope.
+
+        If value not found in this scope -
+        parent scope is requested for value
+        """
         try:
             value = self._keyed[name]
         except KeyError as exc:
