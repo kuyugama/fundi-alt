@@ -2,7 +2,7 @@ import types
 import typing
 
 
-def normalize_annotation(annotation: typing.Any) -> tuple[type, ...]:
+def normalize_annotation(annotation: typing.Any) -> tuple[type[typing.Any], ...]:
     type_options: tuple[type, ...] = (annotation,)
 
     origin = typing.get_origin(annotation)

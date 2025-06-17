@@ -1,5 +1,4 @@
 import typing
-import contextlib
 import collections.abc
 from contextlib import AsyncExitStack, ExitStack
 
@@ -7,26 +6,8 @@ from fundi import CallableInfo
 from fundi.util import add_injection_trace, call_async, call_sync
 
 from fundi_alt.scope import Scope
-from fundi_alt.util import normalize_annotation
-from fundi_alt.exceptions import DependencyCycleError, ScopeResolutionError
-
-
-def _cache_status(
-    info: CallableInfo[typing.Any], cache: collections.abc.MutableMapping[int, typing.Any]
-) -> tuple[int, bool, bool]:
-    """
-    Cache status helper. Determines whether cache value can be read or set
-
-    returns (cache_id, is_cached, can_be_cached)
-    """
-    id_ = id(info.call)
-    if not info.use_cache:
-        return id_, False, False
-
-    if id(info.call) in cache:
-        return id_, True, False
-
-    return id_, False, True
+from fundi_alt.resolve import resolve
+from fundi_alt.exceptions import DependencyCycleError
 
 
 def injection_impl(
@@ -63,68 +44,27 @@ def injection_impl(
     - Finally, yields `(values, info, False)` — the fully resolved parameter dictionary,
       along with the original callable info.
     """
-    # TODO: split into two functions - resolve and injection_impl to improve code readability
     values: dict[str, typing.Any] = {}
     try:
-        for parameter in info.parameters:
+        for result in resolve(scope, info, cache):
+            if result.resolved:
+                values[result.parameter.name] = result.value
+                continue
+
+            assert result.dependency is not None
+            dependency = result.dependency
+
             # Set current parameter for nested injections
-            # this is realisation of Parameter-aware dependencies support
-            scope.value("__fundi_parameter__", parameter)
+            # this is implementation of Parameter-aware dependencies support
+            child = scope.child()
+            child.value("__fundi_parameter__", result.parameter)
 
-            # Handle parameter that needs to be resolved by dependency
-            if parameter.from_ is not None:
-                dependency = parameter.from_
+            value = yield child, dependency, True
 
-                id_, cached, can_be_cached = _cache_status(dependency, cache)
+            if dependency.use_cache:
+                cache[id(dependency.call)] = value
 
-                if cached:
-                    value = cache[id_]
-                else:
-                    value = yield scope, dependency, True
-
-                    if can_be_cached:
-                        cache[id_] = value
-
-                values[parameter.name] = value
-                continue
-
-            # Handle parameter that needs to be resolved by type
-            if parameter.resolve_by_type:
-                type_ = normalize_annotation(parameter.annotation)
-                try:
-                    value = typing.cast(
-                        typing.Any | CallableInfo[typing.Any], scope.resolve_by_type(type_)
-                    )
-                except ScopeResolutionError:
-                    if parameter.has_default:
-                        value = parameter.default
-                    else:
-                        raise
-
-                # Scope returned resolver - requesting to resolve it from caller, or use cached value
-                if isinstance(value, CallableInfo) and CallableInfo not in type_:
-                    dependency = typing.cast(CallableInfo[typing.Any], value)
-                    id_, cached, can_be_cached = _cache_status(dependency, cache)
-
-                    if cached:
-                        value = cache[id_]
-                    else:
-                        value = yield scope, dependency, True
-
-                        if can_be_cached:
-                            cache[id_] = value
-
-                values[parameter.name] = value
-                continue
-
-            # Try to resolve parameter by name
-            try:
-                values[parameter.name] = scope.resolve_by_name(parameter.name)
-            except ScopeResolutionError:
-                if parameter.has_default:
-                    values[parameter.name] = parameter.default
-                else:
-                    raise
+            values[result.parameter.name] = value
 
         yield values, info, False
     except Exception as exc:
