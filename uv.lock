@@ -4,8 +4,12 @@ requires-python = ">=3.10"
 
 [[package]]
 name = "fundi"
-version = "1.1.6"
-source = { git = "https://github.com/kuyucode/fundi#573507ba938825f20aa16596813c62775c1dd96e" }
+version = "1.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/2f/01e573bb2492d5c6121aee38ece451a7b2843cb054414b8f3c39c1bd4f06/fundi-1.2.2.tar.gz", hash = "sha256:e0f127832ed1d1aa126de9557c47634c75b431a8c4e9b1c4760e6de45869e434", size = 33248, upload-time = "2025-06-18T19:15:42.796Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/86/f6/95d3c7139468710d6a4d114b87b1cdeb9041db9f13556f15c9ab7846ad36/fundi-1.2.2-py3-none-any.whl", hash = "sha256:0a782e73c9c91a016cbf85e71e2c523bb5f481bb54afbe4a93fcd53032a54ccf", size = 36365, upload-time = "2025-06-18T19:15:41.053Z" },
+]
 
 [[package]]
 name = "fundi-alt"
@@ -16,4 +20,4 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fundi", git = "https://github.com/kuyucode/fundi" }]
+requires-dist = [{ name = "fundi", specifier = ">=1.2.2" }]

@@ -5,11 +5,8 @@ description = "Alternative realisation of FunDIs injection mechanism"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fundi>=1.1.6",
+    "fundi>=1.2.2",
 ]
-
-[tool.uv.sources]
-fundi = { git = "https://github.com/kuyucode/fundi" }
 
 [tool.pyright]
 reportAny = false

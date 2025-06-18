@@ -2,9 +2,9 @@ import typing
 import collections.abc
 
 from fundi import CallableInfo, scan
+from fundi import normalize_annotation
 
 from fundi_alt.types import TypeCast
-from fundi_alt.util import normalize_annotation
 from fundi_alt.exceptions import ScopeResolutionError
 
 T = typing.TypeVar("T")

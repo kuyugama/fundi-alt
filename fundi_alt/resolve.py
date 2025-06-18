@@ -1,11 +1,11 @@
 import typing
 import collections.abc
 
-from fundi import CallableInfo, Parameter
+from fundi import normalize_annotation
 from fundi.types import ParameterResult
+from fundi import CallableInfo, Parameter
 
 from fundi_alt.scope import Scope
-from fundi_alt.util import normalize_annotation
 from fundi_alt.exceptions import ScopeResolutionError
 
 
