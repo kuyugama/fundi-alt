@@ -10,13 +10,11 @@ R = typing.TypeVar("R")
 
 AnyCallable = typing.Callable[..., typing.Any]
 
-def _cache_status(
-    info: CallableInfo[typing.Any], cache: collections.abc.MutableMapping[int, typing.Any]
-) -> tuple[int, bool, bool]: ...
 def injection_impl(
     scope: Scope,
     info: CallableInfo[typing.Any],
     cache: collections.abc.MutableMapping[int, typing.Any],
+    override: collections.abc.Mapping[AnyCallable, CallableInfo[typing.Any]],
 ) -> collections.abc.Generator[
     tuple[Scope | dict[str, typing.Any], CallableInfo[typing.Any], bool], typing.Any, None
 ]: ...
@@ -27,6 +25,7 @@ def inject(
     stack: ExitStack,
     visited: set[AnyCallable] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: collections.abc.Mapping[AnyCallable, CallableInfo[typing.Any]] | None = None,
 ) -> R: ...
 @typing.overload
 def inject(
@@ -35,6 +34,7 @@ def inject(
     stack: ExitStack,
     visited: set[AnyCallable] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: collections.abc.Mapping[AnyCallable, CallableInfo[typing.Any]] | None = None,
 ) -> R: ...
 @typing.overload
 def inject(
@@ -43,6 +43,7 @@ def inject(
     stack: ExitStack,
     visited: set[AnyCallable] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: collections.abc.Mapping[AnyCallable, CallableInfo[typing.Any]] | None = None,
 ) -> R: ...
 @typing.overload
 async def ainject(
@@ -51,6 +52,7 @@ async def ainject(
     stack: AsyncExitStack,
     visited: set[AnyCallable] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: collections.abc.Mapping[AnyCallable, CallableInfo[typing.Any]] | None = None,
 ) -> R: ...
 @typing.overload
 async def ainject(
@@ -59,6 +61,7 @@ async def ainject(
     stack: AsyncExitStack,
     visited: set[AnyCallable] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: collections.abc.Mapping[AnyCallable, CallableInfo[typing.Any]] | None = None,
 ) -> R: ...
 @typing.overload
 async def ainject(
@@ -67,6 +70,7 @@ async def ainject(
     stack: AsyncExitStack,
     visited: set[AnyCallable] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: collections.abc.Mapping[AnyCallable, CallableInfo[typing.Any]] | None = None,
 ) -> R: ...
 @typing.overload
 async def ainject(
@@ -75,4 +79,5 @@ async def ainject(
     stack: AsyncExitStack,
     visited: set[AnyCallable] | None = None,
     cache: collections.abc.MutableMapping[int, typing.Any] | None = None,
+    override: collections.abc.Mapping[AnyCallable, CallableInfo[typing.Any]] | None = None,
 ) -> R: ...
